@@ -1,0 +1,21 @@
+{
+  "name": "DollazzTycoon - Rapper Tycoon",
+  "short_name": "Dollazz Tycoon - Rapper Tycoon",
+  "description": "Become the ultimate Rapper Tycoon!",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#330000",
+  "theme_color": "#660000",
+  "icons": [
+    {
+      "src": "assets/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

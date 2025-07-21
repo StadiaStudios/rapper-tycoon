@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DollazzTycoon - Rapper Tycoon</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- PWA Meta Tags for iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="DollazzTycoon">
+    <link rel="apple-touch-icon" href="assets/icon-192x192.png"> <!-- Recommended size: 192x192 or larger -->
+    <link rel="apple-touch-startup-image" href="assets/splash-screen.png"> <!-- Optional: Splash screen image -->
+
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <style>
+        /* Global scrollbar for the entire page */
+        html {
+            scrollbar-width: thin; /* For Firefox */
+            scrollbar-color: #007bff #0a0a1a; /* For Firefox: thumb color track color */
+        }
+        html::-webkit-scrollbar {
+            width: 12px; /* Width of the scrollbar */
+        }
+        html::-webkit-scrollbar-track {
+            background: #0a0a1a; /* Color of the track */
+        }
+        html::-webkit-scrollbar-thumb {
+            background: #007bff; /* Color of the scroll thumb */
+            border-radius: 6px; /* Rounded corners for the thumb */
+            border: 3px solid #0a0a1a; /* Padding around thumb */
+        }
+        html::-webkit-scrollbar-thumb:hover {
+            background: #0056b3; /* Color of the scroll thumb on hover */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Changed background to a dark blue gradient */
+            background: linear-gradient(135deg, #0a0a1a, #1a1a3b, #0a0a1a); /* Dark blue gradient */
+            color: #e2e8f0; /* Light text */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+            box-sizing: border-box;
+            overflow-y: auto; /* Allow vertical scrolling for mobile users */
+            position: relative; /* For snow overlay */
+        }
+        .game-container {
+            background-color: #1a1a3b; /* Dark blue-grey for container */
+            border-radius: 1rem; /* Rounded corners */
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.5);
+            max-width: 90%;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Keep hidden for internal layout, body handles overflow */
+            position: relative; /* Needed for absolute positioning of settings */
+            z-index: 1; /* Ensure game content is above snow */
+        }
+        @media (min-width: 768px) {
+            .game-container {
+                flex-direction: row;
+                max-width: 1000px; /* Max width for larger screens */
+            }
+        }
+        .stats-panel, .actions-panel {
+            padding: 1.5rem;
+        }
+        .stats-panel {
+            background-color: #0d0d26; /* Darker blue accent for stats */
+            border-bottom-left-radius: 1rem;
+            border-top-left-radius: 1rem;
+            flex: 1;
+            min-width: 250px; /* Minimum width for stats panel */
+        }
+        @media (max-width: 767px) {
+            .stats-panel {
+                border-bottom-left-radius: 0;
+                border-top-right-radius: 1rem;
+                border-bottom-right-radius: 0;
+            }
+        }
+        .actions-panel {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            background-color: #1a1a3b; /* Same as container */
+        }
+        .action-button {
+            background-color: #007bff; /* Blue for buttons */
+            color: #e2e8f0;
+            padding: 0.8rem 1.2rem;
+            border-radius: 0.75rem; /* Rounded corners */
+            transition: background-color 0.2s, transform 0.1s;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .action-button:hover:not(:disabled) {
+            background-color: #0056b3; /* Darker blue on hover */
+            transform: translateY(-2px);
+        }
+        .action-button:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
+        }
+        .action-button:disabled {
+            background-color: #0a0a1a; /* Even darker blue for disabled */
+            color: #a0aec0;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .message-log {
+            background-color: #0d0d26; /* Darker blue for log */
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            max-height: 150px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            color: #cbd5e0;
+        }
+        .message-log p {
+            margin-bottom: 0.5rem;
+        }
+        .message-log p:last-child {
+            margin-bottom: 0;
+        }
+        .icon {
+            font-size: 1.2rem;
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .stat-item:last-child {
+            margin-bottom: 0;
+        }
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #63b3ed; /* Softer blue for values */
+        }
+        h2 {
+            font-size: 1.75rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            color: #90cdf4; /* Brighter blue for headings */
+        }
+        h3 {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: #90cdf4; /* Brighter blue for headings */
+        }
+        .audio-controls {
+            margin-top: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            padding: 0.75rem;
+            background-color: #0a0a1a;
+            border-radius: 0.75rem;
+        }
+        .audio-controls input[type="range"] {
+            width: 100px;
+            -webkit-appearance: none;
+            height: 8px;
+            border-radius: 5px;
+            background: #1c1c4a;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity .2s;
+        }
+        .audio-controls input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #007bff;
+            cursor: pointer;
+        }
+        .audio-controls input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #007bff;
+            cursor: pointer;
+        }
+
+        /* Custom Scrollbar for message-log */
+        .message-log::-webkit-scrollbar {
+            width: 8px; /* Width of the scrollbar */
+        }
+
+        .message-log::-webkit-scrollbar-track {
+            background: #0a0a1a; /* Color of the track */
+            border-radius: 10px;
+        }
+
+        .message-log::-webkit-scrollbar-thumb {
+            background: #007bff; /* Color of the scroll thumb */
+            border-radius: 10px;
+        }
+
+        .message-log::-webkit-scrollbar-thumb:hover {
+            background: #0056b3; /* Color of the scroll thumb on hover */
+        }
+
+        .rapper-name-input {
+            background-color: #0a0a1a;
+            border: 1px solid #007bff;
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            color: #e2e8f0;
+            font-size: 1.1rem;
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 1rem;
+        }
+        .rapper-name-input:focus {
+            outline: none;
+            border-color: #63b3ed;
+            box-shadow: 0 0 0 2px rgba(99, 179, 237, 0.5);
+        }
+
+        /* Settings/Store Page Styles */
+        .settings-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(10, 10, 26, 0.95); /* Semi-transparent dark blue */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000; /* Ensure it's on top */
+            backdrop-filter: blur(5px); /* Optional blur effect */
+            -webkit-backdrop-filter: blur(5px); /* For Safari */
+        }
+
+        .settings-content {
+            background-color: #0d0d26; /* Darker blue for settings panel */
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.7);
+            text-align: center;
+            width: 90%;
+            max-width: 500px;
+        }
+        .settings-content h2 {
+            color: #90cdf4;
+            margin-bottom: 1.5rem;
+        }
+        .settings-content .version-text {
+            color: #a0aec0;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+        .settings-button {
+            background-color: #007bff;
+            color: #e2e8f0;
+            padding: 0.8rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: bold;
+            transition: background-color 0.2s, transform 0.1s;
+            margin: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        .settings-button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        .settings-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
+        }
+        .settings-button.clear-data {
+            background-color: #dc3545; /* Red for clear data */
+        }
+        .settings-button.clear-data:hover {
+            background-color: #c82333;
+        }
+
+        /* Snow effect styles */
+        .snow-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Allow clicks to pass through */
+            overflow: hidden; /* Hide snow particles outside the screen */
+            z-index: 0; /* Ensure snow is behind game content */
+        }
+
+        .snow {
+            position: absolute;
+            background: #e0f2f7; /* Light Blue */
+            border-radius: 50%;
+            opacity: 0.8;
+            animation: snowfall linear infinite;
+        }
+
+        @keyframes snowfall {
+            0% {
+                transform: translate3d(0, -100px, 0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: translate3d(var(--x-end), 100vh, 0);
+                opacity: 0;
+            }
+        }
+
+        /* Avatar Store Specific Styles */
+        .rapper-avatar {
+            width: 96px; /* w-24 */
+            height: 96px; /* h-24 */
+            border-radius: 50%;
+            margin-left: auto;
+            margin-right: auto;
+            margin-bottom: 1rem; /* mb-4 */
+            object-fit: cover;
+            border: 2px solid #004966; /* blue-400 */
+        }
+
+        .avatar-item {
+            background-color: #0d0d26;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .avatar-image {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid #007bff;
+        }
+        .avatar-name {
+            font-weight: bold;
+            color: #e2e8f0;
+        }
+        .buy-button, .equip-button {
+            background-color: #007bff;
+            color: #e2e8f0;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            transition: background-color 0.2s, transform 0.1s;
+            width: 100%;
+        }
+        .buy-button:hover:not(:disabled), .equip-button:hover:not(:disabled) {
+            background-color: #0056b3;
+            transform: translateY(-1px);
+        }
+        .buy-button:disabled, .equip-button:disabled {
+            background-color: #1a1a3b;
+            color: #a0aec0;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        /* Style for the equipped button */
+        .equip-button.equipped {
+            background-color: #28a745; /* Green for equipped */
+            color: #e2e8f0;
+            cursor: default;
+            opacity: 1;
+        }
+        .equip-button.equipped:hover {
+            background-color: #28a745; /* No change on hover for equipped */
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <!-- Snow Container -->
+    <div class="snow-container" id="snowContainer"></div>
+
+    <div class="game-container">
+        <!-- Rapper Name & Stats Panel -->
+        <div class="stats-panel p-6 md:p-8 flex-none">
+            <h2 class="text-3xl mb-4 text-center" id="currentRapperName">Rapper Name</h2>
+            <img id="rapperAvatar" class="rapper-avatar" src="" alt="Rapper Avatar">
+            <div class="stat-item">
+                <span class="icon">💰</span>
+                <div>
+                    <div class="text-sm text-gray-300">Money</div>
+                    <div id="money" class="stat-value">$0</div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <span class="icon">🌟</span>
+                <div>
+                    <div class="text-sm text-gray-300">Fame</div>
+                    <div id="fame" class="stat-value">0</div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <span class="icon">🎤</span>
+                <div>
+                    <div class="text-sm text-gray-300">Skill</div>
+                    <div id="skill" class="stat-value">1</div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <span class="icon">🏢</span>
+                <div>
+                    <div class="text-sm text-gray-300">Studio Level</div>
+                    <div id="studioLevel" class="stat-value">1</div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <span class="icon">🎵</span>
+                <div>
+                    <div class="text-sm text-gray-300">Songs Recorded</div>
+                    <div id="songsRecorded" class="stat-value">0</div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <span class="icon">💿</span>
+                <div>
+                    <div class="text-sm text-gray-300">Albums Released</div>
+                    <div id="albumsReleased" class="stat-value">0</div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <span class="icon">🎧</span>
+                <div>
+                    <div class="text-sm text-gray-300">Distributed Songs</div>
+                    <div id="distributedSongs" class="stat-value">0</div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <span class="icon">📈</span>
+                <div>
+                    <div class="text-sm text-gray-300">Streaming Income</div>
+                    <div id="streamingIncome" class="stat-value">$0/s</div>
+                </div>
+            </div>
+            <button id="settingsBtn" class="action-button mt-6 w-full" onclick="game.showSettings()">
+                <span class="icon">⚙️</span> Settings
+            </button>
+            <button id="storeBtn" class="action-button mt-4 w-full" onclick="game.showStore()">
+                <span class="icon">🛍️</span> Avatar Store
+            </button>
+        </div>
+
+        <!-- Actions Panel -->
+        <div class="actions-panel p-6 md:p-8 flex-auto">
+            <h2 class="text-3xl mb-6 text-center">Actions</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <button id="writeRhymesBtn" class="action-button" onclick="game.writeRhymes()">
+                    <span class="icon">📝</span> Write Rhymes
+                </button>
+                <button id="performLocalGigBtn" class="action-button" onclick="game.performLocalGig()">
+                    <span class="icon">🎸</span> Perform Local Gig (+$10, +5 Fame)
+                </button>
+                <button id="recordDemoBtn" class="action-button" onclick="game.recordDemo()">
+                    <span class="icon">💾</span> Record Demo (-$50, +10 Fame)
+                </button>
+                <button id="upgradeStudioBtn" class="action-button" onclick="game.upgradeStudio()">
+                    <span class="icon">🛠️</span> Upgrade Studio (-$100, Level 2)
+                </button>
+                <button id="performConcertBtn" class="action-button" onclick="game.performConcert()">
+                    <span class="icon">🏟️</span> Perform Concert (+$200, +50 Fame)
+                </button>
+                <button id="releaseAlbumBtn" class="action-button" onclick="game.releaseAlbum()">
+                    <span class="icon">💿</span> Release Album
+                </button>
+                <button id="distributeStreamingBtn" class="action-button" onclick="game.distributeToStreaming()">
+                    <span class="icon">🌐</span> Distribute to Spotify (-$6000, +$9000, +13000 Fame)
+                </button>
+            </div>
+
+            <h3 class="text-2xl mb-4 text-center">Game Log</h3>
+            <div id="messageLog" class="message-log">
+                <p>Welcome to Rapper Tycoon! Start by writing some rhymes.</p>
+            </div>
+
+            <!-- Audio Controls -->
+            <div class="audio-controls">
+                <button id="prevSongBtn" class="action-button !bg-transparent !shadow-none !p-2">
+                    <span class="icon">⏪</span>
+                </button>
+                <audio id="backgroundMusic" loop>
+                    <!-- Source will be set by JavaScript -->
+                    Your browser does not support the audio element.
+                </audio>
+                <button id="toggleMusicBtn" class="action-button !bg-transparent !shadow-none !p-2">
+                    <span class="icon" id="musicIcon">🔊</span>
+                </button>
+                <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.5">
+                <button id="nextSongBtn" class="action-button !bg-transparent !shadow-none !p-2">
+                    <span class="icon">⏩</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Settings Page Overlay -->
+        <div id="settingsPage" class="settings-overlay hidden">
+            <div class="settings-content">
+                <h2 class="text-3xl">Settings</h2>
+                <p id="gameVersionText" class="version-text"></p>
+                <div class="mb-6">
+                    <label for="rapperNameInputSettings" class="block text-left text-gray-300 text-sm mb-2">Change Rapper Name:</label>
+                    <input type="text" id="rapperNameInputSettings" class="rapper-name-input" placeholder="Enter your Rapper Name" maxlength="20">
+                </div>
+                <button class="settings-button clear-data" onclick="game.clearDataConfirm()">
+                    Clear All Game Data
+                </button>
+                <button class="settings-button" onclick="game.hideSettings()">
+                    Close Settings
+                </button>
+            </div>
+        </div>
+
+        <!-- Store Page Overlay -->
+        <div id="storePage" class="settings-overlay hidden">
+            <div class="settings-content">
+                <h2 class="text-3xl">Avatar Store</h2>
+                <div id="avatarList" class="grid grid-cols-2 sm:grid-cols-3 gap-4 my-4 overflow-y-auto max-h-96">
+                    <!-- Avatar items will be rendered here by JS -->
+                </div>
+                <button class="settings-button" onclick="game.hideStore()">
+                    Close Store
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Click Sound Effect Audio Element -->
+    <audio id="clickSound">
+        <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_73147814a6.mp3" type="audio/mpeg">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-fast-sci-fi-click-1125.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <script>
+        // Game state object
+        const game = {
+            money: 0,
+            fame: 0,
+            skill: 1,
+            studioLevel: 1,
+            songsRecorded: 0,
+            albumsReleased: 0,
+            rapperName: "New Rapper",
+            messageLog: [],
+            maxLogMessages: 8,
+            gameVersion: "1.0.0",
+            distributedSongs: 0,
+            streamingIncomePerSecond: 0,
+            streamingEffectEndTime: 0, // New: Tracks when the temporary income should stop
+
+            currentAvatar: "https://placehold.co/96x96/0a0a12/ccccff?text=👤", // Default avatar
+            avatars: [
+                { id: 'default', name: 'Basic Mic', url: 'https://placehold.co/96x96/0a0a12/ccccff?text=👤', cost: 0, unlocked: true },
+                { id: 'diamond', name: 'Diamond Chain', url: 'assets/diamondchain.png', cost: 90000, unlocked: false },
+                { id: 'dreadhead', name: 'Dreadhead', url: 'assets/dreadhead.png', cost: 40000, unlocked: false } // Fixed: Added name property
+            ],
+
+            // Cooldowns
+            cooldowns: {
+                performConcert: {
+                    lastUsed: 0,
+                    duration: 10000
+                },
+                releaseAlbum: {
+                    lastUsed: 0,
+                    duration: 10000
+                },
+                distributeStreaming: {
+                    lastUsed: 0,
+                    duration: 10000 // Cooldown is 10 seconds
+                }
+            },
+
+            // Album rewards configuration (simplified for non-level based albums)
+            albumRewards: {
+                money: 15000, // Updated money to reflect $14000 profit ($14000 profit + $1000 cost)
+                fame: 9000, // Updated fame to 9000
+                cost: 1000 // Updated cost to $1000
+            },
+
+            // Music related properties
+            songList: [
+                "music/substance.mp3",
+                "music/3AM.mp3",
+                "music/storyofayoungnigga.mp3"
+            ],
+            currentSongIndex: 0,
+            backgroundMusicElement: null,
+            clickSoundElement: null,
+
+            // Function to set the rapper name
+            setRapperName: function(name) {
+                this.rapperName = name.trim() === "" ? "New Rapper" : name;
+                document.getElementById('currentRapperName').textContent = this.rapperName;
+                this.updateUI();
+                this.saveGame();
+            },
+
+            // Function to update the UI with current game stats
+            updateUI: function() {
+                document.getElementById('money').textContent = `$${this.money}`;
+                document.getElementById('fame').textContent = this.fame;
+                document.getElementById('skill').textContent = this.skill;
+                document.getElementById('studioLevel').textContent = this.studioLevel;
+                document.getElementById('songsRecorded').textContent = this.songsRecorded;
+                document.getElementById('albumsReleased').textContent = this.albumsReleased;
+                document.getElementById('distributedSongs').textContent = this.distributedSongs;
+                document.getElementById('streamingIncome').textContent = `$${this.streamingIncomePerSecond}/s`; // Display streaming income
+
+                // Update the rapper name display and avatar in the stats panel
+                document.getElementById('currentRapperName').textContent = this.rapperName;
+                document.getElementById('rapperAvatar').src = this.currentAvatar;
+
+
+                // Update the input field in settings to reflect the current rapperName
+                const rapperNameInputSettings = document.getElementById('rapperNameInputSettings');
+                if (rapperNameInputSettings) {
+                    rapperNameInputSettings.value = this.rapperName === "New Rapper" ? "" : this.rapperName;
+                }
+
+                // Update button states based on game progress and cooldowns
+                const now = Date.now();
+
+                // Write Rhymes
+                document.getElementById('writeRhymesBtn').disabled = false;
+
+                // Perform Local Gig
+                document.getElementById('performLocalGigBtn').disabled = this.skill < 2;
+
+                // Record Demo
+                const recordDemoBtn = document.getElementById('recordDemoBtn');
+                let recordDemoCost = 50;
+                let recordDemoFame = 10;
+                let recordDemoText = `Record Demo (-$50, +10 Fame)`;
+
+                if (this.fame >= 100000) {
+                    recordDemoCost = 10000;
+                    recordDemoFame = 2000;
+                    recordDemoText = `Record High-Tier Demo (-$10000, +2000 Fame)`;
+                }
+
+                recordDemoBtn.disabled = this.skill < 3 || this.money < recordDemoCost;
+                recordDemoBtn.innerHTML = `<span class="icon">💾</span> ${recordDemoText}`;
+
+
+                // Upgrade Studio
+                const upgradeStudioBtn = document.getElementById('upgradeStudioBtn');
+                let upgradeStudioCost = 0;
+                let upgradeStudioText = '';
+
+                if (this.studioLevel === 1) {
+                    upgradeStudioCost = 13000; // Cost to go from Level 1 to Level 2
+                    upgradeStudioText = `Upgrade Studio (-$13000, Level 2)`;
+                } else if (this.studioLevel === 2) { // Cap at level 2
+                    upgradeStudioCost = Infinity; // Effectively disables the button
+                    upgradeStudioText = `Max Studio Level`;
+                }
+
+                if (this.studioLevel >= 2) { // Only allow upgrade to level 2
+                    upgradeStudioBtn.disabled = true;
+                    upgradeStudioBtn.innerHTML = `<span class="icon">🛠️</span> Max Studio Level`;
+                } else {
+                    upgradeStudioBtn.disabled = this.money < upgradeStudioCost;
+                    upgradeStudioBtn.innerHTML = `<span class="icon">🛠️</span> ${upgradeStudioText}`;
+                }
+
+
+                // Perform Concert
+                const concertBtn = document.getElementById('performConcertBtn');
+                const concertCooldownRemaining = Math.ceil((this.cooldowns.performConcert.lastUsed + this.cooldowns.performConcert.duration - now) / 1000);
+                let concertFameGainText = '+50 Fame'; // Default fame gain text
+                // let concertFameRequirement = 50; // Default fame requirement - not used directly for disabling
+
+                if (this.fame >= 50000) {
+                    concertFameGainText = '+9000 Fame'; // New fame gain text
+                    // No change to money for now, but can be added if needed
+                }
+
+                if (concertCooldownRemaining > 0) {
+                    concertBtn.disabled = true;
+                    concertBtn.innerHTML = `<span class="icon">🏟️</span> Perform Concert (${concertCooldownRemaining}s)`;
+                } else {
+                    concertBtn.disabled = this.fame < 50 || this.skill < 4; // Use hardcoded fame requirement
+                    concertBtn.innerHTML = `<span class="icon">🏟️</span> Perform Concert (+$200, ${concertFameGainText})`;
+                }
+
+
+                // Release Album
+                const albumBtn = document.getElementById('releaseAlbumBtn');
+                const albumCooldownRemaining = Math.ceil((this.cooldowns.releaseAlbum.lastUsed + this.cooldowns.releaseAlbum.duration - now) / 1000);
+
+                let albumBtnText = `<span class="icon">💿</span> Release Album`;
+                const albumCost = this.albumRewards.cost;
+                const albumMoney = this.albumRewards.money;
+                const albumFame = this.albumRewards.fame;
+
+                albumBtnText += ` (-$${albumCost}, +$${albumMoney}, +${albumFame} Fame)`;
+
+                if (albumCooldownRemaining > 0) {
+                    albumBtn.disabled = true;
+                    albumBtn.innerHTML = `<span class="icon">💿</span> Release Album (${albumCooldownRemaining}s)`;
+                } else {
+                    albumBtn.disabled = this.fame < 100 || this.songsRecorded < 3 || this.money < albumCost;
+                    albumBtn.innerHTML = albumBtnText;
+                }
+
+                // Distribute to Streaming
+                const streamingBtn = document.getElementById('distributeStreamingBtn');
+                const streamingCooldownRemaining = Math.ceil((this.cooldowns.distributeStreaming.lastUsed + this.cooldowns.distributeStreaming.duration - now) / 1000);
+                if (streamingCooldownRemaining > 0) {
+                    streamingBtn.disabled = true;
+                    streamingBtn.innerHTML = `<span class="icon">🌐</span> Distribute to Spotify (${streamingCooldownRemaining}s)`;
+                } else {
+                    streamingBtn.disabled = this.studioLevel < 2 || this.money < 6000;
+                    streamingBtn.innerHTML = `<span class="icon">🌐</span> Distribute to Spotify (-$6000, +$6000/s for 5s, +6000 Fame)`;
+                }
+
+
+                this.renderMessageLog();
+            },
+
+            // Function to add messages to the game log
+            addMessage: function(message) {
+                this.messageLog.push(message);
+                if (this.messageLog.length > this.maxLogMessages) {
+                    this.messageLog.shift(); // Remove oldest message
+                }
+                this.renderMessageLog();
+            },
+
+            // Function to render the message log to the UI
+            renderMessageLog: function() {
+                const logElement = document.getElementById('messageLog');
+                logElement.innerHTML = ''; // Clear existing messages
+                this.messageLog.forEach(msg => {
+                    const p = document.createElement('p');
+                    p.textContent = msg;
+                    logElement.appendChild(p);
+                });
+                logElement.scrollTop = logElement.scrollHeight; // Scroll to bottom
+            },
+
+            // Function to play the click sound
+            playClickSound: function() {
+                if (this.clickSoundElement) {
+                    this.clickSoundElement.currentTime = 0; // Rewind to start
+                    this.clickSoundElement.play().catch(e => console.log("Click sound play blocked:", e));
+                }
+            },
+
+            // Game actions
+            writeRhymes: function() {
+                this.playClickSound();
+                const skillGain = Math.floor(Math.random() * 3) + 1;
+                this.skill += skillGain;
+                this.addMessage(`You wrote some fire rhymes! Skill increased by ${skillGain}.`);
+                this.updateUI();
+                this.saveGame();
+            },
+
+            performLocalGig: function() {
+                this.playClickSound();
+                if (this.skill < 2) {
+                    this.addMessage("You need more skill to perform a local gig! Keep writing rhymes.");
+                    return;
+                }
+                const moneyEarned = 10 + Math.floor(Math.random() * 5);
+                const fameGained = 5 + Math.floor(Math.random() * 3);
+                this.money += moneyEarned;
+                this.fame += fameGained;
+                this.addMessage(`You rocked the local gig! Earned $${moneyEarned} and gained ${fameGained} fame.`);
+                this.updateUI();
+                this.saveGame();
+            },
+
+            recordDemo: function() {
+                this.playClickSound();
+                if (this.skill < 3) {
+                    this.addMessage("Your skill isn't high enough to record a demo yet.");
+                    return;
+                }
+
+                let cost = 50;
+                let fameGained = 10 + Math.floor(Math.random() * 5);
+                let message = `You recorded a demo! Spent $50, gained ${fameGained} fame, and recorded 1 song.`;
+
+                if (this.fame >= 100000) {
+                    cost = 10000;
+                    fameGained = 2000;
+                    message = `You recorded a high-tier demo! Spent $10000, gained ${fameGained} fame, and recorded 1 song.`;
+                }
+
+                if (this.money < cost) {
+                    this.addMessage(`You need $${cost} to record this demo.`);
+                    return;
+                }
+
+                this.money -= cost;
+                this.fame += fameGained;
+                this.songsRecorded++;
+                this.addMessage(message);
+                this.updateUI();
+                this.saveGame();
+            },
+
+            upgradeStudio: function() {
+                this.playClickSound();
+                let cost = 0;
+                let message = "";
+
+                if (this.studioLevel === 1) {
+                    cost = 13000;
+                    message = `You upgraded your studio to level 2! Spent $${cost}.`;
+                } else if (this.studioLevel >= 2) { // Cap at level 2
+                    this.addMessage("Your studio is already at max level!");
+                    return;
+                }
+
+                if (this.money < cost) {
+                    this.addMessage(`You need $${cost} to upgrade your studio.`);
+                    return;
+                }
+
+                this.money -= cost;
+                this.studioLevel++;
+                this.addMessage(message);
+                this.updateUI();
+                this.saveGame();
+            },
+
+            performConcert: function() {
+                this.playClickSound();
+                const now = Date.now();
+                if (now < this.cooldowns.performConcert.lastUsed + this.cooldowns.performConcert.duration) {
+                    this.addMessage("The concert is on cooldown. Wait a bit!");
+                    return;
+                }
+                // Check for general fame requirement
+                if (this.fame < 50) {
+                    this.addMessage("You're not famous enough to perform a concert yet. Get more fame!");
+                    return;
+                }
+                if (this.skill < 4) {
+                    this.addMessage("Your skill isn't high enough for a concert. Practice more!");
+                    return;
+                }
+
+                const moneyEarned = 200 + Math.floor(Math.random() * 50);
+                let fameGained;
+
+                if (this.fame >= 50000) {
+                    fameGained = 9000; // Increased fame for high fame players
+                } else {
+                    fameGained = 50 + Math.floor(Math.random() * 20); // Original fame gain
+                }
+
+                this.money += moneyEarned;
+                this.fame += fameGained;
+                this.cooldowns.performConcert.lastUsed = now;
+                this.addMessage(`You performed an epic concert! Earned $${moneyEarned} and gained ${fameGained} fame.`);
+                this.updateUI();
+                this.saveGame();
+            },
+
+            releaseAlbum: function() {
+                this.playClickSound();
+                const now = Date.now();
+                if (now < this.cooldowns.releaseAlbum.lastUsed + this.cooldowns.releaseAlbum.duration) {
+                    this.addMessage("You just released an album! Give it some time to circulate.");
+                    return;
+                }
+                if (this.fame < 100) {
+                    this.addMessage("You need more fame to release an album.");
+                    return;
+                }
+                if (this.songsRecorded < 3) {
+                    this.addMessage("You need at least 3 songs recorded to release an album.");
+                    return;
+                }
+
+                const albumCost = this.albumRewards.cost;
+                const albumMoney = this.albumRewards.money;
+                const albumFame = this.albumRewards.fame;
+
+                if (this.money < albumCost) {
+                    this.addMessage(`You need $${albumCost} to release this album. Get that paper!`);
+                    return;
+                }
+
+                this.money -= albumCost;
+                this.money += albumMoney;
+                this.fame += albumFame;
+                this.albumsReleased++; // Increment albumsReleased
+                this.cooldowns.releaseAlbum.lastUsed = now;
+                this.addMessage(`You released an album! Earned $${albumMoney} and gained ${albumFame} fame.`);
+
+                this.updateUI();
+                this.saveGame();
+            },
+
+            distributeToStreaming: function() {
+                this.playClickSound();
+                const now = Date.now();
+                if (now < this.cooldowns.distributeStreaming.lastUsed + this.cooldowns.distributeStreaming.duration) {
+                    this.addMessage("You just distributed music. Wait a bit before doing it again!");
+                    return;
+                }
+                if (this.studioLevel < 2) {
+                    this.addMessage("You need Studio Level 2 to distribute music to streaming services.");
+                    return;
+                }
+                if (this.money < 6000) {
+                    this.addMessage("You need $6000 to distribute music to streaming services.");
+                    return;
+                }
+                this.money -= 6000;
+                this.fame += 6000;
+                this.distributedSongs++; // Increment distributed songs
+                
+                // Set fixed streaming income and temporary duration
+                this.streamingIncomePerSecond = 6000;
+                this.streamingEffectEndTime = now + (5 * 1000); // 5 seconds from now
+
+                this.cooldowns.distributeStreaming.lastUsed = now;
+                this.addMessage(`Your music is now on streaming services! Gained $${this.streamingIncomePerSecond}/s income for 5 seconds and 6000 fame.`);
+                this.updateUI();
+                this.saveGame();
+            },
+
+            // Music control functions
+            playCurrentSong: function() {
+                if (this.backgroundMusicElement && this.songList.length > 0) {
+                    this.backgroundMusicElement.src = this.songList[this.currentSongIndex];
+                    this.backgroundMusicElement.play().catch(e => console.log("Music play blocked:", e));
+                    this.updateMusicIcon();
+                }
+            },
+
+            playNextSong: function() {
+                this.playClickSound();
+                this.currentSongIndex = (this.currentSongIndex + 1) % this.songList.length;
+                this.playCurrentSong();
+                this.addMessage(`Now playing: Song ${this.currentSongIndex + 1}`);
+                this.saveGame();
+            },
+
+            playPreviousSong: function() {
+                this.playClickSound();
+                this.currentSongIndex = (this.currentSongIndex - 1 + this.songList.length) % this.songList.length;
+                this.playCurrentSong();
+                this.addMessage(`Now playing: Song ${this.currentSongIndex + 1}`);
+                this.saveGame();
+            },
+
+            updateMusicIcon: function() {
+                const musicIcon = document.getElementById('musicIcon');
+                if (this.backgroundMusicElement.paused || this.backgroundMusicElement.volume === 0) {
+                    musicIcon.textContent = '🔇';
+                } else {
+                    musicIcon.textContent = '🔊';
+                }
+            },
+
+            // Save game state to localStorage
+            saveGame: function() {
+                const gameState = {
+                    money: this.money,
+                    fame: this.fame,
+                    skill: this.skill,
+                    studioLevel: this.studioLevel,
+                    songsRecorded: this.songsRecorded,
+                    albumsReleased: this.albumsReleased,
+                    rapperName: this.rapperName,
+                    currentAvatar: this.currentAvatar,
+                    avatars: this.avatars.map(a => ({ id: a.id, unlocked: a.unlocked })),
+                    cooldowns: {
+                        performConcert: { lastUsed: this.cooldowns.performConcert.lastUsed },
+                        releaseAlbum: { lastUsed: this.cooldowns.releaseAlbum.lastUsed },
+                        distributeStreaming: { lastUsed: this.cooldowns.distributeStreaming.lastUsed }
+                    },
+                    messageLog: this.messageLog,
+                    currentSongIndex: this.currentSongIndex,
+                    distributedSongs: this.distributedSongs,
+                    streamingIncomePerSecond: this.streamingIncomePerSecond,
+                    streamingEffectEndTime: this.streamingEffectEndTime // Save streaming effect end time
+                };
+                localStorage.setItem('rapperTycoonSave', JSON.stringify(gameState));
+                console.log("Game saved!");
+            },
+
+            // Load game state from localStorage
+            loadGame: function() {
+                const savedState = localStorage.getItem('rapperTycoonSave');
+                if (savedState) {
+                    const gameState = JSON.parse(savedState);
+                    this.money = gameState.money || 0;
+                    this.fame = gameState.fame || 0;
+                    this.skill = gameState.skill || 1;
+                    this.studioLevel = gameState.studioLevel || 1;
+                    this.songsRecorded = gameState.songsRecorded || 0;
+                    this.albumsReleased = gameState.albumsReleased || 0;
+                    this.rapperName = gameState.rapperName || "New Rapper";
+                    this.currentAvatar = gameState.currentAvatar || "https://placehold.co/96x96/0a0a12/ccccff?text=👤";
+                    this.distributedSongs = gameState.distributedSongs || 0;
+                    this.streamingIncomePerSecond = gameState.streamingIncomePerSecond || 0;
+                    this.streamingEffectEndTime = gameState.streamingEffectEndTime || 0; // Load streaming effect end time
+
+                    if (gameState.avatars) {
+                        this.avatars.forEach(defaultAvatar => {
+                            const loadedAvatar = gameState.avatars.find(la => la.id === defaultAvatar.id);
+                            if (loadedAvatar) {
+                                defaultAvatar.unlocked = loadedAvatar.unlocked;
+                            }
+                        });
+                    }
+
+                    this.cooldowns.performConcert.lastUsed = gameState.cooldowns.performConcert.lastUsed || 0;
+                    this.cooldowns.releaseAlbum.lastUsed = gameState.cooldowns.releaseAlbum.lastUsed || 0;
+                    this.cooldowns.distributeStreaming.lastUsed = gameState.cooldowns.distributeStreaming.lastUsed || 0;
+                    this.messageLog = gameState.messageLog || ["Welcome back! Game loaded."];
+                    this.currentSongIndex = gameState.currentSongIndex || 0;
+                    console.log("Game loaded!");
+                } else {
+                    this.addMessage("Welcome to Rapper Tycoon! Start by writing some rhymes.");
+                }
+            },
+
+            // Settings page functions
+            showSettings: function() {
+                this.playClickSound();
+                document.getElementById('settingsPage').classList.remove('hidden');
+                const rapperNameInputSettings = document.getElementById('rapperNameInputSettings');
+                if (rapperNameInputSettings) {
+                    rapperNameInputSettings.value = this.rapperName === "New Rapper" ? "" : this.rapperName;
+                }
+                document.getElementById('gameVersionText').textContent = `Version: ${this.gameVersion}`;
+            },
+
+            hideSettings: function() {
+                    this.playClickSound();
+                document.getElementById('settingsPage').classList.add('hidden');
+                const rapperNameInputSettings = document.getElementById('rapperNameInputSettings');
+                if (rapperNameInputSettings) {
+                    this.setRapperName(rapperNameInputSettings.value);
+                }
+            },
+
+            clearDataConfirm: function() {
+                this.playClickSound();
+                // Replaced window.confirm with a custom modal/message box for better UX in an iframe.
+                // For simplicity, I'll use a direct clear for now, but a custom modal would be preferred.
+                // If this were a full application, I'd implement a custom confirmation dialog.
+                const confirmClear = confirm("Are you sure you want to clear ALL game data? This action cannot be undone!");
+                if (confirmClear) {
+                    this.clearData();
+                    this.hideSettings();
+                }
+            },
+
+            clearData: function() {
+                localStorage.removeItem('rapperTycoonSave');
+                this.money = 0;
+                this.fame = 0;
+                this.skill = 1;
+                this.studioLevel = 1;
+                this.songsRecorded = 0;
+                this.albumsReleased = 0;
+                this.rapperName = "New Rapper";
+                this.messageLog = ["Game data cleared. Start a new rap career!"];
+                this.cooldowns.performConcert.lastUsed = 0;
+                this.cooldowns.releaseAlbum.lastUsed = 0;
+                this.cooldowns.distributeStreaming.lastUsed = 0;
+                this.currentSongIndex = 0;
+                this.distributedSongs = 0;
+                this.streamingIncomePerSecond = 0;
+                this.streamingEffectEndTime = 0; // Reset streaming effect end time
+                // Reset avatars to initial state (only default unlocked)
+                this.avatars.forEach(avatar => {
+                    avatar.unlocked = (avatar.id === 'default');
+                });
+                this.currentAvatar = "https://placehold.co/96x96/0a0a12/ccccff?text=👤"; // Reset to default avatar
+
+                this.updateUI();
+                this.playCurrentSong();
+                this.addMessage("Game data has been cleared.");
+                console.log("Game data cleared!");
+            },
+
+            // Store functions
+            showStore: function() {
+                this.playClickSound();
+                document.getElementById('storePage').classList.remove('hidden');
+                this.renderAvatarStore();
+            },
+
+            hideStore: function() {
+                this.playClickSound();
+                document.getElementById('storePage').classList.add('hidden');
+            },
+
+            renderAvatarStore: function() {
+                const avatarListElement = document.getElementById('avatarList');
+                avatarListElement.innerHTML = ''; // Clear existing items
+
+                this.avatars.forEach(avatar => {
+                    const avatarItem = document.createElement('div');
+                    avatarItem.classList.add('avatar-item');
+                    let buttonHtml = '';
+
+                    if (avatar.unlocked) {
+                        if (this.currentAvatar === avatar.url) {
+                            // Add 'equipped' class to the button if this avatar is currently equipped
+                            buttonHtml = `<button class="equip-button equipped" disabled>EQUIPPED</button>`;
+                        } else {
+                            buttonHtml = `<button class="equip-button" onclick="game.selectAvatar('${avatar.id}')">EQUIP</button>`;
+                        }
+                    } else {
+                        buttonHtml = `<button class="buy-button ${this.money < avatar.cost ? 'disabled' : ''}" ${this.money < avatar.cost ? 'disabled' : ''} onclick="game.buyAvatar('${avatar.id}')">BUY ($${avatar.cost})</button>`;
+                    }
+
+                    avatarItem.innerHTML = `
+                        <img src="${avatar.url}" alt="${avatar.name}" class="avatar-image">
+                        <p class="avatar-name">${avatar.name}</p>
+                        ${buttonHtml}
+                    `;
+                    avatarListElement.appendChild(avatarItem);
+                });
+            },
+
+            buyAvatar: function(avatarId) {
+                this.playClickSound();
+                const avatar = this.avatars.find(a => a.id === avatarId);
+                if (avatar && !avatar.unlocked) {
+                    if (this.money >= avatar.cost) {
+                        this.money -= avatar.cost;
+                        avatar.unlocked = true;
+                        this.currentAvatar = avatar.url; // Auto-equip on purchase
+                        this.addMessage(`You bought the "${avatar.name}" avatar!`);
+                        this.updateUI();
+                        this.renderAvatarStore(); // Re-render store to update button
+                        this.saveGame();
+                    } else {
+                        this.addMessage(`Not enough money to buy "${avatar.name}". You need $${avatar.cost}.`);
+                    }
+                }
+            },
+
+            selectAvatar: function(avatarId) {
+                this.playClickSound();
+                const avatar = this.avatars.find(a => a.id === avatarId);
+                if (avatar && avatar.unlocked && this.currentAvatar !== avatar.url) {
+                    this.currentAvatar = avatar.url;
+                    this.addMessage(`You equipped the "${avatar.name}" avatar.`);
+                    this.updateUI();
+                    this.renderAvatarStore(); // Re-render store to update button
+                    this.saveGame();
+                }
+            },
+
+            // Snow effect functions
+            createSnowflake: function() {
+                const snowContainer = document.getElementById('snowContainer');
+                const snowflake = document.createElement('div');
+                snowflake.classList.add('snow');
+
+                const size = Math.random() * 5 + 2;
+                snowflake.style.width = `${size}px`;
+                snowflake.style.height = `${size}px`;
+
+                const startX = Math.random() * 100;
+                snowflake.style.left = `${startX}vw`;
+
+                const animationDuration = Math.random() * 10 + 5;
+                snowflake.style.animationDuration = `${animationDuration}s`;
+
+                const animationDelay = Math.random() * 5;
+                snowflake.style.animationDelay = `${animationDelay}s`;
+
+                const endXOffset = (Math.random() - 0.5) * 50;
+                snowflake.style.setProperty('--x-end', `${startX + endXOffset}vw`);
+
+                snowContainer.appendChild(snowflake);
+
+                snowflake.addEventListener('animationend', () => {
+                    snowflake.remove();
+                });
+            },
+
+            // Initialize the game
+            init: function() {
+                this.backgroundMusicElement = document.getElementById('backgroundMusic');
+                this.clickSoundElement = document.getElementById('clickSound');
+                this.loadGame();
+                this.updateUI(); // This updates all UI elements, including initial music icon state based on loaded game.
+
+                // Set initial volume
+                const volumeSlider = document.getElementById('volumeSlider');
+                this.backgroundMusicElement.volume = volumeSlider.value;
+                this.updateMusicIcon(); // Ensure icon reflects initial volume/paused state
+
+                // Attempt to play music, and update icon based on actual play status
+                this.playCurrentSong(); // This calls updateMusicIcon internally
+
+                // Add an event listener for when the audio can play through, in case autoplay was blocked
+                this.backgroundMusicElement.addEventListener('canplaythrough', () => {
+                    this.updateMusicIcon();
+                });
+
+                // Add an event listener for when the audio is paused (e.g., by user or browser policy)
+                this.backgroundMusicElement.addEventListener('pause', () => {
+                    this.updateMusicIcon();
+                });
+
+                // Add an event listener for when the audio starts playing
+                this.backgroundMusicElement.addEventListener('play', () => {
+                    this.updateMusicIcon();
+                });
+
+                setInterval(() => {
+                    const now = Date.now();
+                    if (this.streamingEffectEndTime > 0 && now < this.streamingEffectEndTime) {
+                        this.money += this.streamingIncomePerSecond;
+                    } else if (this.streamingEffectEndTime > 0 && now >= this.streamingEffectEndTime) {
+                        // Effect has ended
+                        this.streamingIncomePerSecond = 0;
+                        this.streamingEffectEndTime = 0; // Reset to prevent re-triggering this block
+                        this.addMessage("Your streaming income effect has ended.");
+                    }
+                    this.updateUI(); // Update UI to reflect new money and cooldowns
+                }, 1000);
+
+                const toggleMusicBtn = document.getElementById('toggleMusicBtn');
+
+                toggleMusicBtn.addEventListener('click', () => {
+                    this.playClickSound();
+                    if (this.backgroundMusicElement.paused) {
+                        this.backgroundMusicElement.play().catch(e => console.log("Music play blocked (user interaction):", e));
+                    } else {
+                        this.backgroundMusicElement.pause();
+                    }
+                    // The 'play' and 'pause' event listeners will handle updateMusicIcon()
+                });
+
+                volumeSlider.addEventListener('input', (event) => {
+                    this.backgroundMusicElement.volume = event.target.value;
+                    this.updateMusicIcon();
+                });
+
+                const prevSongBtn = document.getElementById('prevSongBtn');
+                const nextSongBtn = document.getElementById('nextSongBtn');
+                prevSongBtn.addEventListener('click', () => this.playPreviousSong());
+                nextSongBtn.addEventListener('click', () => this.playNextSong());
+
+                this.backgroundMusicElement.addEventListener('ended', () => {
+                    this.playNextSong();
+                });
+
+                const rapperNameInputSettings = document.getElementById('rapperNameInputSettings');
+                if (rapperNameInputSettings) {
+                    rapperNameInputSettings.addEventListener('input', (event) => {
+                        this.setRapperName(event.target.value);
+                    });
+                }
+
+                window.onbeforeunload = () => {
+                    this.saveGame();
+                };
+
+                const numberOfSnowflakes = 50;
+                for (let i = 0; i < numberOfSnowflakes; i++) {
+                    this.createSnowflake();
+                }
+                setInterval(() => {
+                    this.createSnowflake();
+                }, 500);
+            }
+        };
+
+        window.onload = function() {
+            game.init();
+        };
+    </script>
+</body>
+</html>

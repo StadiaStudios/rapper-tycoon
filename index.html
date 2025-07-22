@@ -470,7 +470,7 @@
                 <span class="icon">⚙️</span> Settings
             </button>
             <button id="storeBtn" class="action-button mt-4 w-full" onclick="game.showStore()">
-                <span class="icon">🛍️</span> Avatar Store
+                <span class="icon">🛍️</span> Chain Shop
             </button>
         </div>
 
@@ -496,8 +496,11 @@
                 <button id="releaseAlbumBtn" class="action-button" onclick="game.releaseAlbum()">
                     <span class="icon">💿</span> Release Album
                 </button>
-                <button id="distributeStreamingBtn" class="action-button" onclick="game.distributeToStreaming()">
-                    <span class="icon">🌐</span> Distribute to Spotify (-$6000, +$9000, +13000 Fame)
+                <button id="distributeStreamingBtn" class="action-button" onclick="game.distributeToStreaming('spotify')">
+                    <span class="icon">🌐</span> Distribute to Spotify (-$6000, +$6000/s for 20s, +3000 Fame)
+                </button>
+                <button id="distributeAppleMusicBtn" class="action-button" onclick="game.distributeToStreaming('appleMusic')">
+                    <span class="icon">🍎</span> Distribute to Apple Music (-$12000, +$10000/2s for 20s, +3000 Fame)
                 </button>
             </div>
 
@@ -546,7 +549,7 @@
         <!-- Store Page Overlay -->
         <div id="storePage" class="settings-overlay hidden">
             <div class="settings-content">
-                <h2 class="text-3xl">Avatar Store</h2>
+                <h2 class="text-3xl">ICEBOX</h2>
                 <div id="avatarList" class="grid grid-cols-2 sm:grid-cols-3 gap-4 my-4 overflow-y-auto max-h-96">
                     <!-- Avatar items will be rendered here by JS -->
                 </div>
@@ -576,16 +579,21 @@
             rapperName: "New Rapper",
             messageLog: [],
             maxLogMessages: 8,
-            gameVersion: "1.0.0",
+            gameVersion: "1.1.1",
             distributedSongs: 0,
             streamingIncomePerSecond: 0,
             streamingEffectEndTime: 0, // New: Tracks when the temporary income should stop
+            appleMusicIncomePerInterval: 0, // New: Income for Apple Music
+            appleMusicIntervalDuration: 2000, // New: 2 seconds
+            appleMusicEffectEndTime: 0, // New: Tracks when Apple Music income should stop
+            appleMusicIntervalId: null, // New: To store the interval ID for Apple Music
 
             currentAvatar: "https://placehold.co/96x96/0a0a12/ccccff?text=👤", // Default avatar
             avatars: [
-                { id: 'default', name: 'Basic Mic', url: 'https://placehold.co/96x96/0a0a12/ccccff?text=👤', cost: 0, unlocked: true },
+                { id: 'default', name: 'Basic Fake Chain', url: 'assets/basicfakechain.png', cost: 0, unlocked: true },
                 { id: 'diamond', name: 'Diamond Chain', url: 'assets/diamondchain.png', cost: 90000, unlocked: false },
-                { id: 'dreadhead', name: 'Dreadhead', url: 'assets/dreadhead.png', cost: 40000, unlocked: false } // Fixed: Added name property
+                { id: 'dreadhead', name: 'Gas', url: 'assets/gas.png', cost: 40000, unlocked: false },
+                { id: 'skill_master', name: 'Snoopy', url: 'assets/snoopy.png', cost: 0, unlocked: false, unlockCondition: { type: 'skill', value: 200 } } // New avatar renamed to "IT"
             ],
 
             // Cooldowns
@@ -598,9 +606,13 @@
                     lastUsed: 0,
                     duration: 10000
                 },
-                distributeStreaming: {
+                distributeStreaming: { // For Spotify
                     lastUsed: 0,
                     duration: 10000 // Cooldown is 10 seconds
+                },
+                distributeAppleMusic: { // New: Cooldown for Apple Music
+                    lastUsed: 0,
+                    duration: 30000 // 30 seconds cooldown for Apple Music
                 }
             },
 
@@ -638,7 +650,14 @@
                 document.getElementById('songsRecorded').textContent = this.songsRecorded;
                 document.getElementById('albumsReleased').textContent = this.albumsReleased;
                 document.getElementById('distributedSongs').textContent = this.distributedSongs;
-                document.getElementById('streamingIncome').textContent = `$${this.streamingIncomePerSecond}/s`; // Display streaming income
+                
+                // Display combined streaming income
+                let totalStreamingIncome = this.streamingIncomePerSecond;
+                if (this.appleMusicIncomePerInterval > 0) {
+                    // Approximate Apple Music income per second for display
+                    totalStreamingIncome += (this.appleMusicIncomePerInterval / (this.appleMusicIntervalDuration / 1000));
+                }
+                document.getElementById('streamingIncome').textContent = `$${totalStreamingIncome.toFixed(0)}/s`; 
 
                 // Update the rapper name display and avatar in the stats panel
                 document.getElementById('currentRapperName').textContent = this.rapperName;
@@ -651,6 +670,15 @@
                     rapperNameInputSettings.value = this.rapperName === "New Rapper" ? "" : this.rapperName;
                 }
 
+                // Check for new avatar unlock condition
+                const skillMasterAvatar = this.avatars.find(a => a.id === 'skill_master');
+                if (skillMasterAvatar && !skillMasterAvatar.unlocked && this.skill >= skillMasterAvatar.unlockCondition.value) {
+                    skillMasterAvatar.unlocked = true;
+                    this.addMessage(`You've unlocked the "${skillMasterAvatar.name}" avatar by reaching ${skillMasterAvatar.unlockCondition.value} skill! Check the Avatar Store!`);
+                    this.saveGame(); // Save immediately upon unlock
+                }
+
+
                 // Update button states based on game progress and cooldowns
                 const now = Date.now();
 
@@ -658,7 +686,19 @@
                 document.getElementById('writeRhymesBtn').disabled = false;
 
                 // Perform Local Gig
-                document.getElementById('performLocalGigBtn').disabled = this.skill < 2;
+                const performLocalGigBtn = document.getElementById('performLocalGigBtn');
+                let localGigMoney = 10;
+                let localGigFame = 5;
+                let localGigText = `Perform Local Gig (+$10, +5 Fame)`;
+
+                if (this.fame >= 50000) {
+                    localGigMoney = 5000;
+                    localGigFame = 500;
+                    localGigText = `Perform Local Gig (+$5000, +500 Fame)`;
+                }
+                performLocalGigBtn.disabled = this.skill < 2;
+                performLocalGigBtn.innerHTML = `<span class="icon">🎸</span> ${localGigText}`;
+
 
                 // Record Demo
                 const recordDemoBtn = document.getElementById('recordDemoBtn');
@@ -737,15 +777,26 @@
                     albumBtn.innerHTML = albumBtnText;
                 }
 
-                // Distribute to Streaming
-                const streamingBtn = document.getElementById('distributeStreamingBtn');
-                const streamingCooldownRemaining = Math.ceil((this.cooldowns.distributeStreaming.lastUsed + this.cooldowns.distributeStreaming.duration - now) / 1000);
-                if (streamingCooldownRemaining > 0) {
-                    streamingBtn.disabled = true;
-                    streamingBtn.innerHTML = `<span class="icon">🌐</span> Distribute to Spotify (${streamingCooldownRemaining}s)`;
+                // Distribute to Spotify
+                const spotifyBtn = document.getElementById('distributeStreamingBtn');
+                const spotifyCooldownRemaining = Math.ceil((this.cooldowns.distributeStreaming.lastUsed + this.cooldowns.distributeStreaming.duration - now) / 1000);
+                if (spotifyCooldownRemaining > 0) {
+                    spotifyBtn.disabled = true;
+                    spotifyBtn.innerHTML = `<span class="icon">🌐</span> Distribute to Spotify (${spotifyCooldownRemaining}s)`;
                 } else {
-                    streamingBtn.disabled = this.studioLevel < 2 || this.money < 6000;
-                    streamingBtn.innerHTML = `<span class="icon">🌐</span> Distribute to Spotify (-$6000, +$6000/s for 5s, +6000 Fame)`;
+                    spotifyBtn.disabled = this.studioLevel < 2 || this.money < 6000;
+                    spotifyBtn.innerHTML = `<span class="icon">🌐</span> Distribute to Spotify (-$6000, +$6000/s for 20s, +3000 Fame)`;
+                }
+
+                // Distribute to Apple Music
+                const appleMusicBtn = document.getElementById('distributeAppleMusicBtn');
+                const appleMusicCooldownRemaining = Math.ceil((this.cooldowns.distributeAppleMusic.lastUsed + this.cooldowns.distributeAppleMusic.duration - now) / 1000);
+                if (appleMusicCooldownRemaining > 0) {
+                    appleMusicBtn.disabled = true;
+                    appleMusicBtn.innerHTML = `<span class="icon">🍎</span> Distribute to Apple Music (${appleMusicCooldownRemaining}s)`;
+                } else {
+                    appleMusicBtn.disabled = this.studioLevel < 2 || this.money < 12000;
+                    appleMusicBtn.innerHTML = `<span class="icon">🍎</span> Distribute to Apple Music (-$12000, +$10000/2s for 20s, +3000 Fame)`;
                 }
 
 
@@ -797,8 +848,18 @@
                     this.addMessage("You need more skill to perform a local gig! Keep writing rhymes.");
                     return;
                 }
-                const moneyEarned = 10 + Math.floor(Math.random() * 5);
-                const fameGained = 5 + Math.floor(Math.random() * 3);
+
+                let moneyEarned;
+                let fameGained;
+
+                if (this.fame >= 50000) {
+                    moneyEarned = 5000;
+                    fameGained = 500;
+                } else {
+                    moneyEarned = 10 + Math.floor(Math.random() * 5);
+                    fameGained = 5 + Math.floor(Math.random() * 3);
+                }
+                
                 this.money += moneyEarned;
                 this.fame += fameGained;
                 this.addMessage(`You rocked the local gig! Earned $${moneyEarned} and gained ${fameGained} fame.`);
@@ -852,7 +913,7 @@
                 if (this.money < cost) {
                     this.addMessage(`You need $${cost} to upgrade your studio.`);
                     return;
-                }
+                    }
 
                 this.money -= cost;
                 this.studioLevel++;
@@ -931,31 +992,75 @@
                 this.saveGame();
             },
 
-            distributeToStreaming: function() {
+            distributeToStreaming: function(service) {
                 this.playClickSound();
                 const now = Date.now();
-                if (now < this.cooldowns.distributeStreaming.lastUsed + this.cooldowns.distributeStreaming.duration) {
-                    this.addMessage("You just distributed music. Wait a bit before doing it again!");
-                    return;
-                }
+
                 if (this.studioLevel < 2) {
                     this.addMessage("You need Studio Level 2 to distribute music to streaming services.");
                     return;
                 }
-                if (this.money < 6000) {
-                    this.addMessage("You need $6000 to distribute music to streaming services.");
-                    return;
-                }
-                this.money -= 6000;
-                this.fame += 6000;
-                this.distributedSongs++; // Increment distributed songs
-                
-                // Set fixed streaming income and temporary duration
-                this.streamingIncomePerSecond = 6000;
-                this.streamingEffectEndTime = now + (5 * 1000); // 5 seconds from now
 
-                this.cooldowns.distributeStreaming.lastUsed = now;
-                this.addMessage(`Your music is now on streaming services! Gained $${this.streamingIncomePerSecond}/s income for 5 seconds and 6000 fame.`);
+                const fameGain = 3000; // Fixed fame gain for both services
+
+                if (service === 'spotify') {
+                    if (now < this.cooldowns.distributeStreaming.lastUsed + this.cooldowns.distributeStreaming.duration) {
+                        this.addMessage("You just distributed music to Spotify. Wait a bit before doing it again!");
+                        return;
+                    }
+                    if (this.money < 6000) {
+                        this.addMessage("You need $6000 to distribute music to Spotify.");
+                        return;
+                    }
+                    this.money -= 6000;
+                    this.fame += fameGain; // Updated fame gain
+                    this.distributedSongs++;
+                    
+                    this.streamingIncomePerSecond = 6000;
+                    this.streamingEffectEndTime = now + (20 * 1000); // 20 seconds from now
+
+                    this.cooldowns.distributeStreaming.lastUsed = now;
+                    this.addMessage(`Your music is now on Spotify! Gained $${this.streamingIncomePerSecond}/s income for 20 seconds and ${fameGain} fame.`);
+                } else if (service === 'appleMusic') {
+                    if (now < this.cooldowns.distributeAppleMusic.lastUsed + this.cooldowns.distributeAppleMusic.duration) {
+                        this.addMessage("You just distributed music to Apple Music. Wait a bit before doing it again!");
+                        return;
+                    }
+                    if (this.money < 12000) {
+                        this.addMessage("You need $12000 to distribute music to Apple Music.");
+                        return;
+                    }
+                    this.money -= 12000;
+                    this.fame += fameGain; // Updated fame gain
+                    this.distributedSongs++;
+
+                    this.appleMusicIncomePerInterval = 10000;
+                    this.appleMusicEffectEndTime = now + (20 * 1000); // 20 seconds from now
+
+                    // Clear any existing Apple Music interval to prevent duplicates
+                    if (this.appleMusicIntervalId) {
+                        clearInterval(this.appleMusicIntervalId);
+                    }
+                    // Start the new interval for Apple Music income
+                    this.appleMusicIntervalId = setInterval(() => {
+                        const currentNow = Date.now();
+                        if (currentNow < this.appleMusicEffectEndTime) {
+                            this.money += this.appleMusicIncomePerInterval;
+                            this.addMessage(`Apple Music payout! Received $${this.appleMusicIncomePerInterval}.`);
+                        } else {
+                            // Effect has ended, clear interval and reset
+                            clearInterval(this.appleMusicIntervalId);
+                            this.appleMusicIntervalId = null;
+                            this.appleMusicIncomePerInterval = 0;
+                            this.appleMusicEffectEndTime = 0;
+                            this.addMessage("Your Apple Music income effect has ended.");
+                        }
+                        this.updateUI(); // Update UI after each payout
+                    }, this.appleMusicIntervalDuration);
+
+                    this.cooldowns.distributeAppleMusic.lastUsed = now;
+                    this.addMessage(`Your music is now on Apple Music! Gained $${this.appleMusicIncomePerInterval} every 2 seconds for 20 seconds and ${fameGain} fame.`);
+                }
                 this.updateUI();
                 this.saveGame();
             },
@@ -1009,13 +1114,16 @@
                     cooldowns: {
                         performConcert: { lastUsed: this.cooldowns.performConcert.lastUsed },
                         releaseAlbum: { lastUsed: this.cooldowns.releaseAlbum.lastUsed },
-                        distributeStreaming: { lastUsed: this.cooldowns.distributeStreaming.lastUsed }
+                        distributeStreaming: { lastUsed: this.cooldowns.distributeStreaming.lastUsed },
+                        distributeAppleMusic: { lastUsed: this.cooldowns.distributeAppleMusic.lastUsed } // Save Apple Music cooldown
                     },
                     messageLog: this.messageLog,
                     currentSongIndex: this.currentSongIndex,
                     distributedSongs: this.distributedSongs,
                     streamingIncomePerSecond: this.streamingIncomePerSecond,
-                    streamingEffectEndTime: this.streamingEffectEndTime // Save streaming effect end time
+                    streamingEffectEndTime: this.streamingEffectEndTime, // Save Spotify streaming effect end time
+                    appleMusicIncomePerInterval: this.appleMusicIncomePerInterval, // Save Apple Music income
+                    appleMusicEffectEndTime: this.appleMusicEffectEndTime // Save Apple Music effect end time
                 };
                 localStorage.setItem('rapperTycoonSave', JSON.stringify(gameState));
                 console.log("Game saved!");
@@ -1036,7 +1144,10 @@
                     this.currentAvatar = gameState.currentAvatar || "https://placehold.co/96x96/0a0a12/ccccff?text=👤";
                     this.distributedSongs = gameState.distributedSongs || 0;
                     this.streamingIncomePerSecond = gameState.streamingIncomePerSecond || 0;
-                    this.streamingEffectEndTime = gameState.streamingEffectEndTime || 0; // Load streaming effect end time
+                    this.streamingEffectEndTime = gameState.streamingEffectEndTime || 0; // Load Spotify streaming effect end time
+                    this.appleMusicIncomePerInterval = gameState.appleMusicIncomePerInterval || 0; // Load Apple Music income
+                    this.appleMusicEffectEndTime = gameState.appleMusicEffectEndTime || 0; // Load Apple Music effect end time
+
 
                     if (gameState.avatars) {
                         this.avatars.forEach(defaultAvatar => {
@@ -1050,6 +1161,7 @@
                     this.cooldowns.performConcert.lastUsed = gameState.cooldowns.performConcert.lastUsed || 0;
                     this.cooldowns.releaseAlbum.lastUsed = gameState.cooldowns.releaseAlbum.lastUsed || 0;
                     this.cooldowns.distributeStreaming.lastUsed = gameState.cooldowns.distributeStreaming.lastUsed || 0;
+                    this.cooldowns.distributeAppleMusic.lastUsed = gameState.cooldowns.distributeAppleMusic.lastUsed || 0; // Load Apple Music cooldown
                     this.messageLog = gameState.messageLog || ["Welcome back! Game loaded."];
                     this.currentSongIndex = gameState.currentSongIndex || 0;
                     console.log("Game loaded!");
@@ -1103,10 +1215,17 @@
                 this.cooldowns.performConcert.lastUsed = 0;
                 this.cooldowns.releaseAlbum.lastUsed = 0;
                 this.cooldowns.distributeStreaming.lastUsed = 0;
+                this.cooldowns.distributeAppleMusic.lastUsed = 0; // Reset Apple Music cooldown
                 this.currentSongIndex = 0;
                 this.distributedSongs = 0;
                 this.streamingIncomePerSecond = 0;
-                this.streamingEffectEndTime = 0; // Reset streaming effect end time
+                this.streamingEffectEndTime = 0; // Reset Spotify streaming effect end time
+                this.appleMusicIncomePerInterval = 0; // Reset Apple Music income
+                this.appleMusicEffectEndTime = 0; // Reset Apple Music effect end time
+                if (this.appleMusicIntervalId) {
+                    clearInterval(this.appleMusicIntervalId);
+                    this.appleMusicIntervalId = null;
+                }
                 // Reset avatars to initial state (only default unlocked)
                 this.avatars.forEach(avatar => {
                     avatar.unlocked = (avatar.id === 'default');
@@ -1148,7 +1267,13 @@
                             buttonHtml = `<button class="equip-button" onclick="game.selectAvatar('${avatar.id}')">EQUIP</button>`;
                         }
                     } else {
-                        buttonHtml = `<button class="buy-button ${this.money < avatar.cost ? 'disabled' : ''}" ${this.money < avatar.cost ? 'disabled' : ''} onclick="game.buyAvatar('${avatar.id}')">BUY ($${avatar.cost})</button>`;
+                        // Check if it's a free unlockable avatar (cost 0 and has an unlockCondition)
+                        if (avatar.cost === 0 && avatar.unlockCondition) {
+                            // If not unlocked, display a locked button or an info message
+                            buttonHtml = `<button class="buy-button disabled" disabled>UNLOCK AT ${avatar.unlockCondition.value} SKILL</button>`;
+                        } else {
+                            buttonHtml = `<button class="buy-button ${this.money < avatar.cost ? 'disabled' : ''}" ${this.money < avatar.cost ? 'disabled' : ''} onclick="game.buyAvatar('${avatar.id}')">BUY ($${avatar.cost})</button>`;
+                        }
                     }
 
                     avatarItem.innerHTML = `
@@ -1164,6 +1289,12 @@
                 this.playClickSound();
                 const avatar = this.avatars.find(a => a.id === avatarId);
                 if (avatar && !avatar.unlocked) {
+                    // Prevent buying free avatars if not unlocked by condition
+                    if (avatar.cost === 0 && avatar.unlockCondition) {
+                        this.addMessage(`The "${avatar.name}" avatar is unlocked by reaching ${avatar.unlockCondition.value} skill.`);
+                        return;
+                    }
+
                     if (this.money >= avatar.cost) {
                         this.money -= avatar.cost;
                         avatar.unlocked = true;
@@ -1249,18 +1380,24 @@
                     this.updateMusicIcon();
                 });
 
+                // Main game loop for income and effects
                 setInterval(() => {
                     const now = Date.now();
+                    
+                    // Spotify streaming income
                     if (this.streamingEffectEndTime > 0 && now < this.streamingEffectEndTime) {
                         this.money += this.streamingIncomePerSecond;
                     } else if (this.streamingEffectEndTime > 0 && now >= this.streamingEffectEndTime) {
                         // Effect has ended
                         this.streamingIncomePerSecond = 0;
                         this.streamingEffectEndTime = 0; // Reset to prevent re-triggering this block
-                        this.addMessage("Your streaming income effect has ended.");
+                        this.addMessage("Your Spotify streaming income effect has ended.");
                     }
+                    
+                    // Apple Music income is handled by its own interval (appleMusicIntervalId)
+
                     this.updateUI(); // Update UI to reflect new money and cooldowns
-                }, 1000);
+                }, 1000); // Check every second for Spotify income and effect end
 
                 const toggleMusicBtn = document.getElementById('toggleMusicBtn');
 

@@ -9,6 +9,8 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome CDN for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
     <!-- PWA Meta Tags for iOS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -271,6 +273,14 @@
         .settings-content h2 {
             color: #90cdf4;
             margin-bottom: 1.5rem;
+            display: flex; /* Added for aligning image with title */
+            align-items: center; /* Added for aligning image with title */
+            justify-content: center; /* Added for aligning image with title */
+            gap: 0.75rem; /* Space between image and title */
+        }
+        .settings-content h2 img { /* Style for the image next to ICEBOX title */
+            height: 1.75em; /* Adjust size relative to heading font size */
+            width: auto;
         }
         .settings-content .version-text {
             color: #a0aec0;
@@ -376,7 +386,7 @@
             border-radius: 0.5rem;
             font-weight: bold;
             transition: background-color 0.2s, transform 0.1s;
-            width: 100%;
+            width: 125px;
         }
         .buy-button:hover:not(:disabled), .equip-button:hover:not(:disabled) {
             background-color: #0056b3;
@@ -409,7 +419,8 @@
         <!-- Rapper Name & Stats Panel -->
         <div class="stats-panel p-6 md:p-8 flex-none">
             <h2 class="text-3xl mb-4 text-center" id="currentRapperName">Rapper Name</h2>
-            <img id="rapperAvatar" class="rapper-avatar" src="" alt="Rapper Avatar">
+            <!-- Avatar image element -->
+            <img id="rapperAvatar" class="rapper-avatar" src="https://placehold.co/96x96/0a0a12/ccccff?text=Avatar" alt="Rapper Avatar">
             <div class="stat-item">
                 <span class="icon">💰</span>
                 <div>
@@ -512,18 +523,18 @@
             <!-- Audio Controls -->
             <div class="audio-controls">
                 <button id="prevSongBtn" class="action-button !bg-transparent !shadow-none !p-2">
-                    <span class="icon">⏪</span>
+                    <span class="icon"><i class="fas fa-backward"></i></span>
                 </button>
                 <audio id="backgroundMusic" loop>
                     <!-- Source will be set by JavaScript -->
                     Your browser does not support the audio element.
                 </audio>
                 <button id="toggleMusicBtn" class="action-button !bg-transparent !shadow-none !p-2">
-                    <span class="icon" id="musicIcon">🔊</span>
+                    <span class="icon" id="musicIcon"><i class="fas fa-volume-up"></i></span>
                 </button>
                 <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.5">
                 <button id="nextSongBtn" class="action-button !bg-transparent !shadow-none !p-2">
-                    <span class="icon">⏩</span>
+                    <span class="icon"><i class="fas fa-forward"></i></span>
                 </button>
             </div>
         </div>
@@ -549,12 +560,13 @@
         <!-- Store Page Overlay -->
         <div id="storePage" class="settings-overlay hidden">
             <div class="settings-content">
-                <h2 class="text-3xl">ICEBOX</h2>
+                <!-- Added image next to ICEBOX title -->
+                <h2 class="text-3xl"><img src="assets/icebox.png" alt="Icebox Icon" class="inline-block"> ICEBOX</h2>
                 <div id="avatarList" class="grid grid-cols-2 sm:grid-cols-3 gap-4 my-4 overflow-y-auto max-h-96">
                     <!-- Avatar items will be rendered here by JS -->
                 </div>
                 <button class="settings-button" onclick="game.hideStore()">
-                    Close Store
+                    Close Chain Shop
                 </button>
             </div>
         </div>
@@ -576,10 +588,10 @@
             studioLevel: 1,
             songsRecorded: 0,
             albumsReleased: 0,
-            rapperName: "New Rapper",
+            rapperName: "Default Name",
             messageLog: [],
             maxLogMessages: 8,
-            gameVersion: "1.1.1",
+            gameVersion: "1.2.1",
             distributedSongs: 0,
             streamingIncomePerSecond: 0,
             streamingEffectEndTime: 0, // New: Tracks when the temporary income should stop
@@ -588,12 +600,13 @@
             appleMusicEffectEndTime: 0, // New: Tracks when Apple Music income should stop
             appleMusicIntervalId: null, // New: To store the interval ID for Apple Music
 
-            currentAvatar: "https://placehold.co/96x96/0a0a12/ccccff?text=👤", // Default avatar
+            currentAvatar: "assets/basicfakechain.png", // Default avatar now an image
             avatars: [
                 { id: 'default', name: 'Basic Fake Chain', url: 'assets/basicfakechain.png', cost: 0, unlocked: true },
                 { id: 'diamond', name: 'Diamond Chain', url: 'assets/diamondchain.png', cost: 90000, unlocked: false },
                 { id: 'dreadhead', name: 'Gas', url: 'assets/gas.png', cost: 40000, unlocked: false },
-                { id: 'skill_master', name: 'Snoopy', url: 'assets/snoopy.png', cost: 0, unlocked: false, unlockCondition: { type: 'skill', value: 200 } } // New avatar renamed to "IT"
+                { id: 'skill_master', name: 'Snoopy', url: 'assets/snoopy.png', cost: 0, unlocked: false, unlockCondition: { type: 'skill', value: 200 } },
+                { id: 'gold_chain', name: 'Young', url: 'assets/young.png', cost: 1000000, unlocked: false } // New avatar added
             ],
 
             // Cooldowns
@@ -619,7 +632,7 @@
             // Album rewards configuration (simplified for non-level based albums)
             albumRewards: {
                 money: 15000, // Updated money to reflect $14000 profit ($14000 profit + $1000 cost)
-                fame: 9000, // Updated fame to 9000
+                fame: 6000, // Updated fame to 6000
                 cost: 1000 // Updated cost to $1000
             },
 
@@ -661,6 +674,7 @@
 
                 // Update the rapper name display and avatar in the stats panel
                 document.getElementById('currentRapperName').textContent = this.rapperName;
+                // Set the src for the rapper avatar image
                 document.getElementById('rapperAvatar').src = this.currentAvatar;
 
 
@@ -692,9 +706,9 @@
                 let localGigText = `Perform Local Gig (+$10, +5 Fame)`;
 
                 if (this.fame >= 50000) {
-                    localGigMoney = 5000;
+                    localGigMoney = 3000; 
                     localGigFame = 500;
-                    localGigText = `Perform Local Gig (+$5000, +500 Fame)`;
+                    localGigText = `Perform Local Gig (+$3000, +500 Fame)`; 
                 }
                 performLocalGigBtn.disabled = this.skill < 2;
                 performLocalGigBtn.innerHTML = `<span class="icon">🎸</span> ${localGigText}`;
@@ -707,9 +721,9 @@
                 let recordDemoText = `Record Demo (-$50, +10 Fame)`;
 
                 if (this.fame >= 100000) {
-                    recordDemoCost = 10000;
-                    recordDemoFame = 2000;
-                    recordDemoText = `Record High-Tier Demo (-$10000, +2000 Fame)`;
+                    cost = 10000;
+                    fameGained = 2000;
+                    message = `You recorded a high-tier demo! Spent $10000, gained ${fameGained} fame, and recorded 1 song.`;
                 }
 
                 recordDemoBtn.disabled = this.skill < 3 || this.money < recordDemoCost;
@@ -765,7 +779,7 @@
                 let albumBtnText = `<span class="icon">💿</span> Release Album`;
                 const albumCost = this.albumRewards.cost;
                 const albumMoney = this.albumRewards.money;
-                const albumFame = this.albumRewards.fame;
+                const albumFame = this.albumRewards.fame; // This will now be 6000
 
                 albumBtnText += ` (-$${albumCost}, +$${albumMoney}, +${albumFame} Fame)`;
 
@@ -853,7 +867,7 @@
                 let fameGained;
 
                 if (this.fame >= 50000) {
-                    moneyEarned = 5000;
+                    moneyEarned = 3000; 
                     fameGained = 500;
                 } else {
                     moneyEarned = 10 + Math.floor(Math.random() * 5);
@@ -1092,10 +1106,12 @@
 
             updateMusicIcon: function() {
                 const musicIcon = document.getElementById('musicIcon');
+                // Clear existing classes to avoid conflicts
+                musicIcon.className = 'icon'; 
                 if (this.backgroundMusicElement.paused || this.backgroundMusicElement.volume === 0) {
-                    musicIcon.textContent = '🔇';
+                    musicIcon.innerHTML = '<i class="fas fa-volume-mute"></i>'; // Mute icon
                 } else {
-                    musicIcon.textContent = '🔊';
+                    musicIcon.innerHTML = '<i class="fas fa-volume-up"></i>'; // Volume up icon
                 }
             },
 
@@ -1141,7 +1157,8 @@
                     this.songsRecorded = gameState.songsRecorded || 0;
                     this.albumsReleased = gameState.albumsReleased || 0;
                     this.rapperName = gameState.rapperName || "New Rapper";
-                    this.currentAvatar = gameState.currentAvatar || "https://placehold.co/96x96/0a0a12/ccccff?text=👤";
+                    // Set default avatar to the image path
+                    this.currentAvatar = gameState.currentAvatar || "assets/basicfakechain.png"; 
                     this.distributedSongs = gameState.distributedSongs || 0;
                     this.streamingIncomePerSecond = gameState.streamingIncomePerSecond || 0;
                     this.streamingEffectEndTime = gameState.streamingEffectEndTime || 0; // Load Spotify streaming effect end time
@@ -1230,7 +1247,7 @@
                 this.avatars.forEach(avatar => {
                     avatar.unlocked = (avatar.id === 'default');
                 });
-                this.currentAvatar = "https://placehold.co/96x96/0a0a12/ccccff?text=👤"; // Reset to default avatar
+                this.currentAvatar = "assets/basicfakechain.png"; // Reset to default avatar image
 
                 this.updateUI();
                 this.playCurrentSong();
